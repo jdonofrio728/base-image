@@ -1,0 +1,89 @@
+{
+  "variables": {
+    "server_name": "{{env `SERVER_NAME`}}",
+    "iso_url": "{{env `ISO_URL`}}",
+    "iso_checksum": "{{env `ISO_CHECKSUM`}}",
+    "disk_size": "{{env `DISK_SIZE`}}",
+    "kickstart_file": "{{env `KICKSTART_FILE`}}",
+    "headless": "{{env `HEADLESS`}}",
+    "username": "root",
+    "password": "P@ssw0rd",
+    "version": "{{env `BOX_VERSION`}}"
+  },
+  "builders":[
+    {
+      "type": "qemu",
+      "iso_url": "{{user `ISO_URL`}}",
+      "iso_checksum": "{{user `ISO_CHECKSUM`}}",
+      "iso_checksum_type": "md5",
+      "shutdown_command": "shutdown -P now",
+      "format": "qcow2",
+      "disk_size": 5000,
+      "accelerator": "kvm",
+      "http_directory": "kickstart",
+      "http_port_min": 10082,
+      "http_port_max": 10089,
+      "ssh_host_port_min": 2222,
+      "ssh_host_port_max": 2229,
+      "ssh_username": "root",
+      "ssh_password": "P@ssw0rd",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "30s",
+      "vm_name": "rhel73-base",
+      "net_device": "virtio-net",
+      "disk_interface": "virtio",
+      "boot_wait": "5s",
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{user `kickstart_file`}}<enter><wait>"
+      ]
+    },
+    {
+      "type": "vmware-iso",
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "md5",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": "{{user `disk_size`}}",
+      "disk_type_id": 1,
+      "disk_additional_size": [],
+      "headless": "{{user `headless`}}",
+      "http_directory": "{{template_dir}}/kickstart",
+      "ssh_username": "{{user `username`}}",
+      "ssh_password": "{{user `password`}}",
+      "boot_wait": "10s",
+      "shutdown_command": "shutdown -P now",
+      "vm_name": "{{user  `server_name`}}-{{user `version`}}",
+      "vmdk_name": "{{user  `server_name`}}-{{user `version`}}",
+      "vmx_data" : {
+        "displayname": "{{user  `server_name`}}-{{user `version`}}",
+        "numvcpus": "2",
+        "memsize": "2048",
+        "guestOS": "rhel7-64",
+        "scsi0.virtualDev": "pvscsi"
+      },
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{user `kickstart_file`}}<enter><wait>"
+      ]
+    }
+  ],
+  "provisioners":[
+    {
+      "type": "shell",
+      "inline": [
+        "yum update -y"
+      ]
+    },
+    {
+      "type": "salt-masterless",
+      "local_state_tree": "salt"
+    }
+  ],
+  "post-processors":[
+    {
+      "type": "vagrant",
+      "compression_level": 9,
+      "vagrantfile_template": "Vagrantfile-template",
+      "output": "{{user  `server_name`}}-{{user `version`}}.box"
+    }
+  ]
+}

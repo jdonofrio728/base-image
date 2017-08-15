@@ -1,0 +1,109 @@
+#skipx
+# Action
+install
+
+# System authorization info
+auth --enableshadow --passalgo=sha512
+
+# Custom Repo for CentOS72
+#repo --name="Artifactory-Base" --baseurl=http://ngp-artifactory/artifactory/centos7-base
+#repo --name="Artifactory-Updates" --baseurl=http://ngp-artifactory/artifactory/centos7-updates
+#repo --name="Artifactory-Extras" --baseurl=http://ngp-artifactory/artifactory/centos7-extras
+
+# Accept EULA
+eula --agreed
+
+# Command to perform when complete
+reboot
+
+# Use CDROM installation media
+cdrom
+
+# Use graphical install
+#graphical
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sda
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+# System language
+lang en_US.UTF-8
+
+firewall --disable
+selinux --permissive
+
+# Network information
+network  --bootproto=dhcp --device=ens32 --ipv6=auto --activate
+network  --hostname=%HOSTNAME%
+
+# Root password
+rootpw --iscrypted $6$Xhs6I7TdE9tx7c6t$IO5Xv8UOsQ89agCb7UBLEVd3PrWsvct1QdEKdWSgG//nmy5Pec/FR5wEf4T.qg8Nmw9rih9Ezy7.2..NZLJK9.
+
+# System services
+services --enabled=network,sshd/sendmail
+
+# System timezone
+timezone America/Detroit --isUtc --nontp
+
+# Additional Users
+#user --name=vagrant --plaintext --password vagrant --groups=wheel
+
+# System bootloader configuration
+bootloader --append=" crashkernel=auto" --location=mbr --boot-drive=sda
+
+#autopart --type=lvm # autopatition using lvm
+# Partition clearing information
+clearpart --none --initlabel
+
+# Partition Information size for boot disk
+part /boot --fstype="xfs" --ondisk=sda --size=953
+part pv.251 --fstype="lvmpv" --ondisk=sda --grow
+volgroup os --pesize=4096 pv.251
+logvol swap --fstype="swap" --size=3096 --name=swap --vgname=os
+logvol /var --fstype="ext4" --size=9888 --name=var --vgname=os # CIS 1.1.5
+logvol /var/log --fstype="ext4" --size=1024 --name=var_log --vgname=os # CIS 1.1.7
+logvol /home --fstype="ext4" --size=1907 --name=home --vgname=os # CIS 1.1.9
+logvol /usr --fstype="ext4" --size=3744 --name=usr --vgname=os
+logvol /opt --fstype="ext4" --size 5120 --name=opt --vgname=os
+logvol /var/log/audit --fstype="ext4" --size=1907 --name=var_log_audit --vgname=os # CIS 1.1.8
+logvol / --fstype="ext4" --size=3296 --name=root --vgname=os
+
+%packages
+@^minimal
+@core
+kexec-tools
+openssh-clients
+sudo
+make
+net-tools
+tcpdump
+open-vm-tools
+bc
+wget
+perl
+-fprintd-pam
+-intltool
+%end
+
+%post --log=/root/rhn_subscription.log
+echo "Performing subscription"
+# TODO: At some point we need to register the system
+#       But we may want to do this using shell or another provisioner
+%REGISTER%subscription-manager register --auto-attach --username=%USERNAME% --password='%PASSWORD%'
+%end
+
+%post --nochroot --log=/mnt/sysimage/root/post_ks_results.log
+echo "Removing blank ssh keys"
+rm -rf /mnt/sysimage/etc/ssh/ssh_host_*
+ssh-keygen -t rsa -f /mnt/sysimage/etc/ssh/ssh_host_rsa_key -N ''
+ssh-keygen -t ecdsa -f /mnt/sysimage/etc/ssh/ssh_host_ecdsa_key -N ''
+ssh-keygen -t ed25519 -f /mnt/sysimage/etc/ssh/ssh_host_ed25519_key -N ''
+echo "Installing kernel headers"
+yum install -y linux-headers-$(uname -r)
+echo "Fixing HGFS Vagrant issue"
+echo "answer AUTO_KMODS_ENABLED yes" | tee -a /mnt/sysimage/etc/vmware-tools/locations
+%end
+
+%addon com_redhat_kdump --enable --reserve-mb='auto'
+
+%end
