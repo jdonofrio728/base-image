@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "server_name": "{{env `SERVER_NAME`}}",
+    "iso_url": "{{env `ISO_URL`}}",
+    "iso_checksum": "{{env `ISO_CHECKSUM`}}",
+    "disk_size": "{{env `DISK_SIZE`}}",
+    "kickstart_file": "{{env `KICKSTART_FILE`}}",
+    "headless": "{{env `HEADLESS`}}",
+    "username": "root",
+    "password": "P@ssw0rd",
+    "version": "{{env `BOX_VERSION`}}"
+  },
+  "builders":[
+    {
+      "type": "vmware-iso",
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "md5",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": "{{user `disk_size`}}",
+      "disk_type_id": 1,
+      "disk_additional_size": [204800],
+      "headless": "{{user `headless`}}",
+      "http_directory": "{{template_dir}}/kickstart",
+      "ssh_username": "{{user `username`}}",
+      "ssh_password": "{{user `password`}}",
+      "boot_wait": "10s",
+      "shutdown_command": "shutdown -P now",
+      "vm_name": "{{user  `server_name`}}-{{user `version`}}",
+      "vmdk_name": "{{user  `server_name`}}-{{user `version`}}",
+      "vmx_data" : {
+        "displayname": "{{user  `server_name`}}-{{user `version`}}",
+        "numvcpus": "2",
+        "memsize": "2048",
+        "guestOS": "rhel7-64",
+        "scsi0.virtualDev": "pvscsi"
+      },
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{user `kickstart_file`}}<enter><wait>"
+      ]
+    }
+  ],
+  "provisioners":[
+    {
+      "type": "shell",
+      "inline": [
+        "yum update -y"
+      ]
+    },
+    {
+      "type": "salt-masterless",
+      "local_state_tree": "salt"
+    }
+  ],
+  "post-processors":[
+    {
+      "type": "vagrant",
+      "compression_level": 9,
+      "vagrantfile_template": "Vagrantfile-template",
+      "output": "{{user  `server_name`}}-{{user `version`}}.box"
+    }
+  ]
+}
