@@ -1,3 +1,4 @@
 base:
   '*':
     - vagrant
+    - interface-discovery

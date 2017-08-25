@@ -1,0 +1,10 @@
+[Unit]
+Description=A Simple oneshot service to make sure all interfaces use dhcp by default
+Before=network.service
+
+[Install]
+WantedBy=network.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/default/interface-discovery.sh
