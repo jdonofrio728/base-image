@@ -53,7 +53,7 @@ fi
 
 
 # Run packer
-PACKER="packer build ${DEBUG} -force -only=vmware-iso ${PACKER_TEMPLATE}"
+PACKER="packer build ${DEBUG} -force ${PACKER_TEMPLATE}"
 echo "Running packer: ${PACKER}"
 ${PACKER}
 exitCode=$?
