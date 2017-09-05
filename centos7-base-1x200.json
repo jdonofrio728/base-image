@@ -66,6 +66,27 @@
       "boot_command": [
         "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{user `kickstart_file`}}<enter><wait>"
       ]
+    },
+    {
+      "type": "qemu",
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "md5",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": "{{user `disk_size`}}",
+      "format": "qcow2",
+      "headless": "{{user `headless`}}",
+      "http_directory": "{{template_dir}}/kickstart",
+      "accelerator": "kvm",
+      "ssh_username": "{{user `username`}}",
+      "ssh_password": "{{user `password`}}",
+      "vm_name": "{{user  `server_name`}}-{{user `version`}}",
+      "net_device": "virtio-net",
+      "disk_interface": "virtio-scsi",
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{user `kickstart_file`}}<enter><wait>"
+      ]
+
     }
   ],
   "provisioners":[

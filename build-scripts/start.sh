@@ -51,9 +51,13 @@ else
   DEBUG=""
 fi
 
+if [ ! -z $ONLY ]; then
+  ONLY="-only ${ONLY}"
+fi
+
 
 # Run packer
-PACKER="packer build ${DEBUG} -force ${PACKER_TEMPLATE}"
+PACKER="packer build ${DEBUG} ${ONLY} -force ${PACKER_TEMPLATE}"
 echo "Running packer: ${PACKER}"
 ${PACKER}
 exitCode=$?
